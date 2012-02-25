@@ -527,6 +527,7 @@ class Guake(SimpleGladeApp):
     def __init__(self):
         super(Guake, self).__init__(gladefile('guake.glade'))
         self.client = gconf.client_get_default()
+        self.tab_counter = 0
 
         # setting global hotkey and showing a pretty notification =)
         guake.globalhotkeys.init()
@@ -1204,7 +1205,8 @@ class Guake(SimpleGladeApp):
         self.pid_list.append(pid)
 
         # Adding a new radio button to the tabbar
-        label = box.terminal.get_window_title() or _("Terminal")
+        label = box.terminal.get_window_title() or _("Terminal %s") % self.tab_counter
+        self.tab_counter += 1
         tabs = self.tabs.get_children()
         parent = tabs and tabs[0] or None
 
