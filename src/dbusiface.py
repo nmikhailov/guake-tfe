@@ -70,3 +70,7 @@ class DbusManager(dbus.service.Object):
     @dbus.service.method(DBUS_NAME)
     def quit(self):
         self.guake.quit()
+    
+    @dbus.service.method(DBUS_NAME, in_signature='i')
+    def set_visibility(self, state):
+        self.guake.set_visibility(int(state))

@@ -189,9 +189,6 @@ class GConfHandler(object):
         in guake.
         """
         window_rect = self.guake.get_final_window_rect()
-        """ Causes guake overlap top menubars 
-        """  
-        #self.guake.window.move(window_rect.x, window_rect.y)
         self.guake.window.resize(window_rect.width, window_rect.height)
 
     def scrollbar_toggled(self, client, connection_id, entry, data):
@@ -360,7 +357,7 @@ class GConfKeyHandler(object):
 
         keys = ['toggle_fullscreen', 'new_tab', 'close_tab', 'rename_tab',
                 'previous_tab', 'next_tab', 'clipboard_copy', 'clipboard_paste',
-                'quit',
+                'quit' 
                 ]
         for key in keys:
             notify_add(LKEY(key), self.reload_accelerators)
@@ -1306,7 +1303,21 @@ class Guake(SimpleGladeApp):
         pagepos = self.notebook.get_current_page()
         self.selected_tab = self.tabs.get_children()[pagepos]
         return pagepos
-
+    
+    def set_visibility(self, state):
+        """change visibility state
+        """
+        state = bool(state)
+        cur_state = self.window.get_property('visible')
+        if cur_state == state:
+            return
+        
+        if state:
+            self.show()
+            self.set_terminal_focus()
+        else:
+            self.hide()
+            
 def main():
     """Parses the command line parameters and decide if dbus methods
     should be called or not. If there is already a guake instance
@@ -1350,6 +1361,10 @@ def main():
     parser.add_option('-q', '--quit', dest='quit',
             action='store_true', default=False,
             help=_('Says to Guake go away =('))
+    
+    parser.add_option('-v', '--change-visibility', dest='change_visibility',
+            action='store', default=False,
+            help=_('Change guake visibility state: 0 - hidden, 1 - shown'))
 
     options = parser.parse_args()[0]
 
@@ -1403,6 +1418,10 @@ def main():
 
     if options.quit:
         remote_object.quit()
+        called_with_param = True
+    
+    if options.change_visibility:
+        remote_object.set_visibility(int(options.change_visibility))
         called_with_param = True
 
     if not called_with_param and already_running:
