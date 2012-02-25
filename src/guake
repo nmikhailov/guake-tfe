@@ -189,7 +189,9 @@ class GConfHandler(object):
         in guake.
         """
         window_rect = self.guake.get_final_window_rect()
-        self.guake.window.move(window_rect.x, window_rect.y)
+        """ Causes guake overlap top menubars 
+        """  
+        #self.guake.window.move(window_rect.x, window_rect.y)
         self.guake.window.resize(window_rect.width, window_rect.height)
 
     def scrollbar_toggled(self, client, connection_id, entry, data):
