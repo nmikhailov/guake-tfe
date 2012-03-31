@@ -1102,9 +1102,6 @@ class Guake(SimpleGladeApp):
         """
         pagepos = self.notebook.get_current_page()
         self.delete_tab(pagepos)
-        print 123
-        wnd = wnck.window_get(self.window.window.get_property("xid"))
-        wnd.maximize_horizontally()
 
     def rename_current_tab(self, new_text):
         """Sets the `self.selected_tab' var with the selected radio
