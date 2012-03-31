@@ -26,6 +26,7 @@ import gobject
 pygtk.require('2.0')
 gobject.threads_init()
 
+import wnck
 import gtk
 import vte
 from pango import FontDescription
@@ -373,7 +374,7 @@ class GConfKeyHandler(object):
         if not self.guake.hotkeys.bind(key, self.guake.show_hide):
             raise ShowableError(_('key binding error'),
                                 _('Unable to bind global <b>%s</b> key') % key,
-                                -1)
+                                - 1)
 
     def reload_accelerators(self, *args):
         """Reassign an accel_group to guake main window and guake
@@ -526,6 +527,7 @@ class Guake(SimpleGladeApp):
     """
     def __init__(self):
         super(Guake, self).__init__(gladefile('guake.glade'))
+        self.wnck_handle = None
         self.client = gconf.client_get_default()
         self.tab_counter = 0
         self.width_calulated = False
@@ -776,16 +778,6 @@ class Guake(SimpleGladeApp):
             self.set_terminal_focus()
         else:
             self.hide()
-            
-    def update_width(self, win, req):
-        x, y, w, h= win.get_allocation()
-        self.width_calulated = True
-        self.width = w
-        win.disconnect(win.c_id)
-        win.unmaximize()
-        
-        window_rect = self.get_final_window_rect()
-        win.resize(window_rect.width, window_rect.height)
  
     def show(self):
         """Shows the main window and grabs the focus on it.
@@ -802,17 +794,13 @@ class Guake(SimpleGladeApp):
         self.window.move(window_rect.x, window_rect.y)
         self.window.resize(window_rect.width, window_rect.height)
         self.window.show_all()
-        
-        if not self.width_calulated:
-            self.window.c_id = self.window.connect('size-request', self.update_width)
-            self.window.maximize()
 
         try:
             # does it work in other gtk backends
             time = gtk.gdk.x11_get_server_time(self.window.window)
         except AttributeError:
             time = 0
-
+        
         self.window.window.show()
         self.window.window.focus(time)
 
@@ -820,6 +808,15 @@ class Guake(SimpleGladeApp):
         # after the widget is shown.
         self.client.notify(KEY('/style/font/color'))
         self.client.notify(KEY('/style/background/color'))
+       
+        wnck_handle = None 
+        while wnck_handle == None:
+            wnck.screen_get_default()
+            while gtk.events_pending():
+                gtk.main_iteration()
+            wnck_handle = wnck.window_get(self.window.window.xid)
+        
+        wnck_handle.maximize_horizontally()
 
     def hide(self):
         """Hides the main window of the terminal and sets the visible
@@ -922,7 +919,7 @@ class Guake(SimpleGladeApp):
         """Callback to go to the previous tab. Called by the accel key.
         """
         if self.notebook.get_current_page() == 0:
-            self.notebook.set_current_page(self.notebook.get_n_pages()-1)
+            self.notebook.set_current_page(self.notebook.get_n_pages() - 1)
         else:
             self.notebook.prev_page()
         return True
@@ -930,7 +927,7 @@ class Guake(SimpleGladeApp):
     def accel_next(self, *args):
         """Callback to go to the next tab. Called by the accel key.
         """
-        if self.notebook.get_current_page()+1 == self.notebook.get_n_pages():
+        if self.notebook.get_current_page() + 1 == self.notebook.get_n_pages():
             self.notebook.set_current_page(0)
         else:
             self.notebook.next_page()
@@ -1072,7 +1069,7 @@ class Guake(SimpleGladeApp):
         for uri in droppeduris:
             scheme, _, path, _, _ = urlsplit(uri)
 
-            if scheme!="file":
+            if scheme != "file":
                 pathlist.append(uri)
             else:
                 filename = url2pathname(path)
@@ -1084,16 +1081,16 @@ class Guake(SimpleGladeApp):
                     pathlist.append(filename)
                     continue
 
-                if desktopentry.getType()=='Link':
+                if desktopentry.getType() == 'Link':
                     pathlist.append(desktopentry.getURL())
 
-                if desktopentry.getType()=='Application':
+                if desktopentry.getType() == 'Application':
                     app = desktopentry.getExec()
 
-        if app and len(droppeduris)==1:
+        if app and len(droppeduris) == 1:
             text = app
         else:
-            text = str.join("", (shell_quote(path)+" " for path in pathlist))
+            text = str.join("", (shell_quote(path) + " " for path in pathlist))
 
         box.terminal.feed_child(text)
         return True
@@ -1105,6 +1102,9 @@ class Guake(SimpleGladeApp):
         """
         pagepos = self.notebook.get_current_page()
         self.delete_tab(pagepos)
+        print 123
+        wnd = wnck.window_get(self.window.window.get_property("xid"))
+        wnd.maximize_horizontally()
 
     def rename_current_tab(self, new_text):
         """Sets the `self.selected_tab' var with the selected radio
@@ -1193,8 +1193,8 @@ class Guake(SimpleGladeApp):
         """
         box = GuakeTerminalBox()
         box.terminal.grab_focus()
-        box.terminal.drag_dest_set(gtk.DEST_DEFAULT_MOTION |
-                                   gtk.DEST_DEFAULT_DROP |
+        box.terminal.drag_dest_set(gtk.DEST_DEFAULT_MOTION | 
+                                   gtk.DEST_DEFAULT_DROP | 
                                    gtk.DEST_DEFAULT_HIGHLIGHT,
                                   [('text/uri-list', gtk.TARGET_OTHER_APP, 0)],
                                   gtk.gdk.ACTION_COPY
